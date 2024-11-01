@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// GrpcAgentWorkerRuntime.cs
+// GrpcAgentWorker.cs
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AutoGen.Agents;
 
-public sealed class GrpcAgentWorkerRuntime : IHostedService, IDisposable, IAgentWorkerRuntime
+public sealed class GrpcAgentWorker : AgentWorker, IHostedService, IDisposable, IAgentWorker, IAgentRegistry
 {
     private readonly object _channelLock = new();
     private readonly ConcurrentDictionary<string, Type> _agentTypes = new();
@@ -29,20 +29,20 @@ public sealed class GrpcAgentWorkerRuntime : IHostedService, IDisposable, IAgent
     private readonly AgentRpc.AgentRpcClient _client;
     private readonly IServiceProvider _serviceProvider;
     private readonly IEnumerable<Tuple<string, Type>> _configuredAgentTypes;
-    private readonly ILogger<GrpcAgentWorkerRuntime> _logger;
+    private readonly ILogger<GrpcAgentWorker> _logger;
     private readonly DistributedContextPropagator _distributedContextPropagator;
     private readonly CancellationTokenSource _shutdownCts;
     private AsyncDuplexStreamingCall<Message, Message>? _channel;
     private Task? _readTask;
     private Task? _writeTask;
 
-    public GrpcAgentWorkerRuntime(
+    public GrpcAgentWorker(
         AgentRpc.AgentRpcClient client,
         IHostApplicationLifetime hostApplicationLifetime,
         IServiceProvider serviceProvider,
         [FromKeyedServices("AgentTypes")] IEnumerable<Tuple<string, Type>> configuredAgentTypes,
-        ILogger<GrpcAgentWorkerRuntime> logger,
-        DistributedContextPropagator distributedContextPropagator)
+        ILogger<GrpcAgentWorker> logger,
+        DistributedContextPropagator distributedContextPropagator) : base(logger)
     {
         _client = client;
         _serviceProvider = serviceProvider;
@@ -131,7 +131,6 @@ public sealed class GrpcAgentWorkerRuntime : IHostedService, IDisposable, IAgent
             }
         }
     }
-
     private async Task RunWritePump()
     {
         var channel = GetChannel();
@@ -173,7 +172,6 @@ public sealed class GrpcAgentWorkerRuntime : IHostedService, IDisposable, IAgent
             }
         }
     }
-
     private IAgentBase GetOrActivateAgent(AgentId agentId)
     {
         if (!_agents.TryGetValue((agentId.Type, agentId.Key), out var agent))
@@ -232,7 +230,7 @@ public sealed class GrpcAgentWorkerRuntime : IHostedService, IDisposable, IAgent
         await WriteChannelAsync(new Message { Request = request }).ConfigureAwait(false);
     }
 
-    public async ValueTask PublishEvent(CloudEvent @event)
+    public async ValueTask PublishEventAsync(CloudEvent @event)
     {
         await WriteChannelAsync(new Message { CloudEvent = @event }).ConfigureAwait(false);
     }
@@ -356,6 +354,11 @@ public sealed class GrpcAgentWorkerRuntime : IHostedService, IDisposable, IAgent
         {
             throw new KeyNotFoundException($"Failed to read AgentState for {agentId}.");
         }
+    }
+
+    public override async ValueTask RunAsync(IAgentContext context)
+    {
+        // Implementation specific to GrpcAgentWorkerRuntime
     }
 }
 

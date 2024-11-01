@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
-namespace Microsoft.AutoGen.Runtime;
+namespace Microsoft.AutoGen.Agents;
 
 public static class AgentWorkerHostingExtensions
 {
@@ -30,8 +30,8 @@ public static class AgentWorkerHostingExtensions
         builder.Services.AddGrpc();
         builder.AddOrleans(local);
         builder.Services.TryAddSingleton(DistributedContextPropagator.Current);
-        builder.Services.AddSingleton<WorkerGateway>();
-        builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<WorkerGateway>());
+        builder.Services.AddSingleton<Gateway>();
+        builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<Gateway>());
 
         return builder;
     }
@@ -43,7 +43,7 @@ public static class AgentWorkerHostingExtensions
     }
     public static WebApplication MapAgentService(this WebApplication app)
     {
-        app.MapGrpcService<WorkerGatewayService>();
+        app.MapGrpcService<GrpcGatewayService>();
         return app;
     }
 }

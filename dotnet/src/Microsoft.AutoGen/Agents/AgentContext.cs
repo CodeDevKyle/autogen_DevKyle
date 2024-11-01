@@ -7,14 +7,23 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AutoGen.Agents;
 
-internal sealed class AgentContext(AgentId agentId, IAgentWorkerRuntime runtime, ILogger<AgentBase> logger, DistributedContextPropagator distributedContextPropagator) : IAgentContext
+internal sealed class AgentContext(AgentId agentId, IAgentWorker runtime, ILogger<AgentBase> logger, DistributedContextPropagator distributedContextPropagator) : IAgentContext
 {
-    private readonly IAgentWorkerRuntime _runtime = runtime;
+    private readonly IAgentWorker _runtime = runtime;
 
     public AgentId AgentId { get; } = agentId;
     public ILogger Logger { get; } = logger;
     public IAgentBase? AgentInstance { get; set; }
-    public DistributedContextPropagator DistributedContextPropagator { get; } = distributedContextPropagator;
+    private DistributedContextPropagator DistributedContextPropagator { get; } = distributedContextPropagator;
+    
+    public void Update(Activity? activity, RpcRequest request)
+    {
+        DistributedContextPropagator.Inject(activity, request.Metadata, static (carrier, key, value) => ((IDictionary<string, string>)carrier!)[key] = value);
+    }
+    public void Update(Activity? activity, CloudEvent cloudEvent)
+    {
+        DistributedContextPropagator.Inject(activity, cloudEvent.Metadata, static (carrier, key, value) => ((IDictionary<string, string>)carrier!)[key] = value);
+    }
     public async ValueTask SendResponseAsync(RpcRequest request, RpcResponse response)
     {
         response.RequestId = request.RequestId;
@@ -26,7 +35,7 @@ internal sealed class AgentContext(AgentId agentId, IAgentWorkerRuntime runtime,
     }
     public async ValueTask PublishEventAsync(CloudEvent @event)
     {
-        await _runtime.PublishEvent(@event).ConfigureAwait(false);
+        await _runtime.PublishEventAsync(@event).ConfigureAwait(false);
     }
     public async ValueTask Store(AgentState value)
     {
