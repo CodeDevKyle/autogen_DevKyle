@@ -6,7 +6,6 @@ using Google.Protobuf;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AutoGen.Runtime;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.AutoGen.Agents;
 
@@ -25,13 +24,13 @@ public static class AgentsApp
         }
         builder.AddAgentWorker()
             .AddAgents(agentTypes);
-        builder.AddServiceDefaults();
+       // builder.AddServiceDefaults();
         var app = builder.Build();
         if (local)
         {
             app.MapAgentService();
         }
-        app.MapDefaultEndpoints();
+      //  app.MapDefaultEndpoints();
         Host = app;
         await app.StartAsync().ConfigureAwait(false);
         return Host;

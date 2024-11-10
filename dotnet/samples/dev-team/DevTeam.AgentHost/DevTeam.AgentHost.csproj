@@ -10,7 +10,8 @@
 
    <ItemGroup>
     <ProjectReference Include="../../../src/Microsoft.AutoGen/Runtime/Microsoft.AutoGen.Runtime.csproj" />
-    <ProjectReference Include="../../../src/Microsoft.AutoGen/ServiceDefaults/Microsoft.AutoGen.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\DevTeam.ServiceDefaults\DevTeam.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\DevTeam.Shared\DevTeam.Shared.csproj" />
   </ItemGroup>
 
 </Project>
